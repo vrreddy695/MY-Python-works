@@ -12,7 +12,7 @@ import os
 HOST = 'scooby.cbbirzec93nx.us-east-1.redshift.amazonaws.com'
 PORT = 5439 # redshift default
 USER = 'shifu'
-PASSWORD = '2Lvgoofy'
+PASSWORD = '*********'
 DATABASE = 'biscuit'
 
 def db_connection():
