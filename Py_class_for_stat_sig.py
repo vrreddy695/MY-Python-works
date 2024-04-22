@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-import scipy.stats as stats
+from scipy.stats import norm
+import math
 
 class ABTest:
     def __init__(self, df, variant, metric, confidence_level=0.95):
@@ -10,57 +11,72 @@ class ABTest:
         self.confidence_level=confidence_level
         for i in df[variant].unique().tolist():
             setattr(self, i.lower(), i.lower())
+    
+    # compute the standard deviation of whole population given
+    # Nx: number of guids; Sx: std of buyer GPW; Mx: mean of buyer GPW; Nzero: number of non-buyers
+    def stdevNzero(self, Nx, Sx, Mx, Nzero):
+        WMx = Nx * Mx / (Nx + Nzero)
+        stdevNzero = ((1 / (Nx + Nzero - 1)) * (((Nx - 1) * Sx ** 2) +
+                                            (Nx * Mx ** 2) - ((Nx + Nzero) * WMx ** 2))) ** 0.5
+        return stdevNzero
 
     def calculate_p_value(self):
         result={}
-        control_data = self.df[self.df[self.variant]==self.control][self.metric]
-        treatment_data = self.df[self.df[self.variant]==self.test][self.metric]
+        p_crit = 0.1
+        z = norm.ppf(1 - p_crit / 2)
 
-        control_mean = np.mean(control_data)
-        treatment_mean = np.mean(treatment_data)
-        control_std = np.std(control_data, ddof=1)
-        treatment_std = np.std(treatment_data, ddof=1)
-        n_control = len(control_data)
-        n_treatment = len(treatment_data)
+        guids_t = self.df[self.df[self.variant]==self.test]['guid'].nunique()
+        guids_c = self.df[self.df[self.variant]==self.control]['guid'].nunique()
+
+        # capping at 99.7 pecentile
+
+        self.df = self.df[self.df[self.metric].notnull()]
+        cap_v = 0.997
+        percentiles = self.df[self.metric].quantile([0, cap_v]).values
+        self.df[self.metric] = np.clip(self.df[self.metric], percentiles[0], percentiles[1])
+
+
+        control_data = self.df[self.df[self.variant]==self.control][self.metric].values
+        treatment_data = self.df[self.df[self.variant]==self.test][self.metric].values
+
+        control_mean = sum(control_data)/guids_c
+        treatment_mean = sum(treatment_data)/guids_t
+
+        obs_t = self.df[self.df[self.variant]==self.test]['guid'].nunique()
+        obs_c = self.df[self.df[self.variant]==self.control]['guid'].nunique()
+
+
+
+        control_std = self.stdevNzero(obs_c, np.std(control_data), np.mean(control_data), (guids_c - obs_c))
+        treatment_std = self.stdevNzero(obs_c, np.std(treatment_data), np.mean(treatment_data), (guids_t - obs_t))
+
 
         result['test_mean']=treatment_mean
         result['control_mean']=control_mean
 
         result['test_std']=treatment_std
         result['control_std']=control_std
-        result['n_treatment']=n_treatment
-        result['n_control']=n_control
+        result['n_treatment']=guids_t
+        result['n_control']=guids_c
 
         #lift calculation
-        result['lift'] = "{:.2%}".format((treatment_mean/control_mean)-1)
-
-        #confidence interval calculation
+        lift= (treatment_mean/control_mean)-1
+        result['lift'] ="{:.2%}".format(lift)
+    
 
         # Calculate standard errors
-        se_treatment = treatment_std / np.sqrt(n_treatment)
-        se_control = control_std / np.sqrt(n_control)
+        se = ((control_std ** 2 / guids_c) +(treatment_std ** 2 / guids_t)) ** 0.5
+        if math.isnan(se):
+            se=0
 
-        # Calculate standard error of the lift
-        se_lift = np.sqrt(se_treatment**2 + se_control**2)
+        #confidence interval calculation
+        ci = se * z / control_mean
+        result['ci_lift'] = ("{:.2%}".format(lift - ci), "{:.2%}".format(lift + ci))
 
-        # Calculate z-score for the desired confidence level
-        z_score = stats.norm.ppf((1 + self.confidence_level) / 2)
-        # Calculate confidence interval for the lift
-        lift = treatment_mean - control_mean
-        result['ci_lift'] = ('{:.2%}'.format(lift - z_score * se_lift), '{:.2%}'.format(lift + z_score * se_lift))
+        
 
         #P-Value calculation
-        # Calculate pooled standard deviation
-        pooled_std = np.sqrt(((n_treatment - 1) * treatment_std ** 2 + (n_control - 1) * control_std ** 2) / (n_treatment + n_control - 2))
-
-        # Calculate t-statistic
-        t_statistic = (treatment_mean - control_mean) / (pooled_std * np.sqrt(1/n_treatment + 1/n_control))
-
-        # Calculate degrees of freedom
-        degrees_of_freedom = n_treatment + n_control - 2
-
-        # Calculate p-value
-        p_value = 2 * (1 - stats.t.cdf(abs(t_statistic), df=degrees_of_freedom))
+        result['p_value'] = 2.0000 * (1.000 - norm.cdf(abs((treatment_mean - control_mean) / se)))
         return result
 
 
@@ -85,7 +101,7 @@ visits = np.random.randint(1, 10, size=200)
 
 # Create DataFrame
 df = pd.DataFrame({
-    'user_id': user_ids,
+    'guid': user_ids,
     'variant': variants,
     'visits': visits
 })
@@ -94,8 +110,8 @@ df.head()
 
 
 #calling the method
-my_ob=ABTest(df, 'variant', 'visits')
-print(my_ob.control)
-print(my_ob.test)
 
-print(my_ob.calculate_p_value())
+result=ABTest(df, 'variant', 'visits').calculate_p_value()
+
+pd.DataFrame(result)
+
