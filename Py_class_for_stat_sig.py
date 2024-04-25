@@ -4,11 +4,10 @@ from scipy.stats import norm
 import math
 
 class ABTest:
-    def __init__(self, df, variant, metric, confidence_level=0.95):
+    def __init__(self, df, variant, metric):
         self.df=df
         self.variant=variant
         self.metric=metric
-        self.confidence_level=confidence_level
         for i in df[variant].unique().tolist():
             setattr(self, i.lower(), i.lower())
     
