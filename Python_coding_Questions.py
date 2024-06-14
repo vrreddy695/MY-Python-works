@@ -299,8 +299,75 @@ def bucket_test_scores(df):
 bucket_test_scores(df)
 
 
+#19 Given two sorted arrays, find the median of the combined arrays. 
+def two_arrays_median(ar1, ar2):
+    merged=sorted(ar1+ar2)
+    size=len(merged)
+    if size%2==0:
+        median_val=(merged[size//2]+merged[(size//2)-1])/2
+    else:
+        median_val=merged[size//2]
+    return median_val
+
+ar1=[2,3,5,6]
+ar2=[3,4,6,9,10]
+
+print( two_arrays_median(ar1, ar2))
+
+#20 You have an array of integers and you want to find a certain element; what effective algorithm would you use and what is the efficiency of it?
+def element_index(arr, target):
+    left=0
+    right=len(arr)-1
+    
+    while left <= right:
+        mid=(left+right)//2
+        if arr[mid]==target:
+            return mid
+        
+        elif arr[mid] < target:
+            left = mid +1
+        else:
+            right = mid-1
+
+arr=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+target=9
+
+print('The index of the target element is: ', element_index(arr, target))
+
+#21 Write a function to determine if two strings are anagrams.
+#Method 1: Using sorted characters
+def is_anagram(str1, str2):
+    return sorted(str1.lower())==sorted(str2.lower())
+
+#Method 2: Using character counts
+def anagrams(str1, str2):
+    str1=str1.lower().replace(" ", "")
+    str2=str2.lower().replace(" ", "")
+    if len(str1)==len(str2):
+        char_counts={}
+        for char in str1:
+            if char in char_counts:
+                char_counts[char] += 1
+            else:
+                char_counts[char] = 1
+        for char in str2:
+            if char in char_counts:
+                char_counts[char] -= 1
+        if sum(list(char_counts.values()))==0:
+            return True 
+        else:
+            return False
+
+
+str1 = "listen"
+str2 = "silent"
+
+print('The two strings are anagrams: ', anagrams(str1, str2))
+
+
+
 
 https://www.interviewquery.com/p/python-data-science-interview-questions
 https://www.datacamp.com/blog/data-scientist-interview-questions
 
-# %%
+
