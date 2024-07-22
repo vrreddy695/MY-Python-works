@@ -10,7 +10,7 @@ def number_combinations(list, target):
                 num_combs.add(tuple(sorted(res)))
     return num_combs
 
-aint=[1,2,3,4,5,6,0,4]
+aint=[1,2,3,4,5,6]
 number_combinations(aint, 4)
 
 
@@ -351,8 +351,10 @@ def anagrams(str1, str2):
             else:
                 char_counts[char] = 1
         for char in str2:
-            if char in char_counts:
+            if char in char_counts :
                 char_counts[char] -= 1
+            else:
+                char_counts[char]=1
         if sum(list(char_counts.values()))==0:
             return True 
         else:
@@ -365,9 +367,45 @@ str2 = "silent"
 print('The two strings are anagrams: ', anagrams(str1, str2))
 
 
+#22 Write a function fizz_buzz_sum to find the sum of all multiples of 3 or 5 below a target value.
+#For example, if the target value was 10, the multiples of 3 or 5 below 8 are 3, 5, 6, and 9.
+#Because 3+5+6+9=23, our function would return 23.
+
+def fizz_buzz_sum(target, m1, m2):
+  i=1
+  result=0
+  while i<=target:
+    if m1*i < target:
+      result =result+m1*i
+    if m2*i < target:
+      result =result+m2*i
+    i+=1
+  
+  return result
+
+fizz_buzz_sum(10, 3, 5)
+
+
+#23 Given a positive integer num, write a function that returns True if num is a perfect square else False.
+
+#%%
+def valid_square(x):
+    i=2
+    while i*i <= x:
+        print('loop value: ', i)
+        if i*i==x:
+            return True
+        else:
+            return False
+    
+        i+=1
+
+print(valid_square(5))
+#%%
 
 
 https://www.interviewquery.com/p/python-data-science-interview-questions
 https://www.datacamp.com/blog/data-scientist-interview-questions
 
 
+https://datalemur.com/questions?category=Python
